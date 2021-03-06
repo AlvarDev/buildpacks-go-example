@@ -1,32 +1,26 @@
-# Source: https://github.com/GoogleCloudPlatform/golang-samples/blob/master/run/helloworld/Dockerfile
+FROM golang:latest as builder
 
-FROM golang:1.16-buster as builder
+LABEL maintainer="Alvaro David <alvardev.lp@gmail.com>"
 
-# Create and change to the app directory.
 WORKDIR /app
 
-# Retrieve application dependencies.
-# This allows the container build to reuse cached dependencies.
-# Expecting to copy go.mod and if present go.sum.
-COPY go.* ./
+COPY go.mod go.sum ./
+
 RUN go mod download
 
-# Copy local code to the container image.
-COPY . ./
+COPY . .
 
-# Build the binary.
-RUN go build -mod=readonly -v -o server
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
-# Use the official Debian slim image for a lean production container.
-# https://hub.docker.com/_/debian
-# https://docs.docker.com/develop/develop-images/multistage-build/#use-multi-stage-builds
-FROM debian:buster-slim
-RUN set -x && apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-    ca-certificates && \
-    rm -rf /var/lib/apt/lists/*
+######## Start a new stage from scratch #######
+FROM alpine:latest  
 
-# Copy the binary to the production image from the builder stage.
-COPY --from=builder /app/server /app/server
+RUN apk --no-cache add ca-certificates
 
-# Run the web service on container startup.
-CMD ["/app/server"]
+WORKDIR /root/
+
+COPY --from=builder /app/main .
+
+EXPOSE 8080
+
+ENTRYPOINT ["./main"]
