@@ -128,7 +128,7 @@ To install buildpacks go to: [https://buildpacks.io/docs/tools/pack/](https://bu
 
 To build the image use this:
 ```shell
-pack build my-go-api:v0.1 --builder --builder gcr.io/buildpacks/builder
+pack build my-go-api:v0.1 --builder gcr.io/buildpacks/builder
 ```
 
 To test the image use this:
